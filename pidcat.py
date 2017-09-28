@@ -46,6 +46,7 @@ parser.add_argument('-t', '--tag', dest='tag', action='append', help='Filter out
 parser.add_argument('-i', '--ignore-tag', dest='ignored_tag', action='append', help='Filter output by ignoring specified tag(s)')
 parser.add_argument('-v', '--version', action='version', version='%(prog)s ' + __version__, help='Print the version number and exit')
 parser.add_argument('-a', '--all', dest='all', action='store_true', default=False, help='Print all log messages')
+parser.add_argument('-b', '--buffer', dest='buffer', action='append', help='Receive output from specified logcat buffer')
 
 args = parser.parse_args()
 min_level = LOG_LEVELS_MAP[args.min_level.upper()]
@@ -177,7 +178,10 @@ BACKTRACE_LINE = re.compile(r'^#(.*?)pc\s(.*?)$')
 
 adb_command = base_adb_command[:]
 adb_command.append('logcat')
+if args.buffer:
+  adb_command.extend(['-b', args.buffer[0]])
 adb_command.extend(['-v', 'brief'])
+
 
 # Clear log before starting logcat
 if args.clear_logcat:
@@ -194,6 +198,8 @@ class FakeStdinProcess():
     self.stdout = sys.stdin
   def poll(self):
     return None
+
+print(adb_command)
 
 if sys.stdin.isatty():
   adb = subprocess.Popen(adb_command, stdin=PIPE, stdout=PIPE)
@@ -249,7 +255,7 @@ def parse_start_proc(line):
     return line_package, '', line_pid, line_uid, ''
   return None
 
-def tag_in_tags_regex(tag, tags):  
+def tag_in_tags_regex(tag, tags):
   return any(re.match(r'^' + t + r'$', tag) for t in map(str.strip, tags))
 
 ps_command = base_adb_command + ['shell', 'ps']
